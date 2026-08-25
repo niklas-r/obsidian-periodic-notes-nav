@@ -1,6 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import moment from "moment";
 import { mergeSettings } from "../src/settings";
 import { matchPeriodicNote } from "../src/paths";
 import { buildNavModel } from "../src/model";
@@ -57,7 +56,15 @@ test("a weekly note lists its seven days", () => {
 	const model = modelFor("Journal/2025-W39.md");
 	assert.deepEqual(
 		model.children.map((link) => link.label),
-		["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+		[
+			"Monday",
+			"Tuesday",
+			"Wednesday",
+			"Thursday",
+			"Friday",
+			"Saturday",
+			"Sunday",
+		]
 	);
 	assert.deepEqual(
 		model.children.filter((link) => link.exists).map((link) => link.path),
@@ -92,7 +99,10 @@ test("missing notes can be left out entirely", () => {
 
 test("disabled periods drop out of the breadcrumbs and the contents row", () => {
 	const model = modelFor("Journal/2025-09-26.md", {
-		periods: { ...settings.periods, weekly: { ...settings.periods.weekly, enabled: false } },
+		periods: {
+			...settings.periods,
+			weekly: { ...settings.periods.weekly, enabled: false },
+		},
 	});
 	assert.deepEqual(
 		model.breadcrumbs.map((link) => link.label),
@@ -100,7 +110,10 @@ test("disabled periods drop out of the breadcrumbs and the contents row", () => 
 	);
 
 	const monthly = modelFor("Journal/2025-09.md", {
-		periods: { ...settings.periods, weekly: { ...settings.periods.weekly, enabled: false } },
+		periods: {
+			...settings.periods,
+			weekly: { ...settings.periods.weekly, enabled: false },
+		},
 	});
 	assert.deepEqual(monthly.children, []);
 });

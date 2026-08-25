@@ -1,12 +1,7 @@
 import type { Moment } from "moment";
 import { PERIODS, type PeriodicNavSettings, type PeriodKey } from "./settings";
 import { addPeriods, getChildren, getParents } from "./periods";
-import {
-	noteLabel,
-	notePath,
-	weekOptionsFor,
-	type PeriodMatch,
-} from "./paths";
+import { noteLabel, notePath, weekOptionsFor, type PeriodMatch } from "./paths";
 
 export interface NavLink {
 	key: PeriodKey;
@@ -80,7 +75,12 @@ export function buildNavModel(
 	let previous: NavLink | null = null;
 	let next: NavLink | null = null;
 	if (settings.showSiblings) {
-		previous = createLink(key, addPeriods(date, key, -1, options), settings, exists);
+		previous = createLink(
+			key,
+			addPeriods(date, key, -1, options),
+			settings,
+			exists
+		);
 		next = createLink(key, addPeriods(date, key, 1, options), settings, exists);
 		if (!keep(previous, settings)) previous = null;
 		if (!keep(next, settings)) next = null;

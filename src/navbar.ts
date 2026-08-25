@@ -3,7 +3,10 @@ import type { NavLink, NavModel } from "./model";
 
 export const NAVBAR_CLASS = "pnn-navbar";
 
-export type ActivateFn = (link: NavLink, evt: MouseEvent | KeyboardEvent) => void;
+export type ActivateFn = (
+	link: NavLink,
+	evt: MouseEvent | KeyboardEvent
+) => void;
 
 /** Spoken description of a link, so the label alone does not have to carry it. */
 function describe(link: NavLink, settings: PeriodicNavSettings): string {
@@ -12,7 +15,9 @@ function describe(link: NavLink, settings: PeriodicNavSettings): string {
 	const parts = [`${link.label}, ${noun} ${name}`];
 	if (!link.exists) {
 		parts.push(
-			settings.createMissingNotes ? "does not exist yet, click to create" : "does not exist"
+			settings.createMissingNotes
+				? "does not exist yet, click to create"
+				: "does not exist"
 		);
 	}
 	return parts.join(" — ");
@@ -45,11 +50,19 @@ function renderLink(
 	});
 
 	if (options.arrow === "before") {
-		el.createSpan({ cls: "pnn-arrow", text: "❮", attr: { "aria-hidden": "true" } });
+		el.createSpan({
+			cls: "pnn-arrow",
+			text: "❮",
+			attr: { "aria-hidden": "true" },
+		});
 	}
 	el.createSpan({ cls: "pnn-label", text: link.label });
 	if (options.arrow === "after") {
-		el.createSpan({ cls: "pnn-arrow", text: "❯", attr: { "aria-hidden": "true" } });
+		el.createSpan({
+			cls: "pnn-arrow",
+			text: "❯",
+			attr: { "aria-hidden": "true" },
+		});
 	}
 
 	if (!link.exists) {

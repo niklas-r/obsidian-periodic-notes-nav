@@ -14,11 +14,11 @@ Markdown stays clean, and it stays readable on a phone.
 
 Up to three rows are shown, depending on the note you are in:
 
-| Row | What it holds |
-| --- | --- |
-| Parent notes | The longer periods this note sits in — year, quarter, month, week |
-| Previous and next | The period before and after this one, either side of the current note |
-| Contained notes | The shorter periods inside this one — the days of a week, the weeks of a month, the months of a quarter, the quarters of a year |
+| Row               | What it holds                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Parent notes      | The longer periods this note sits in — year, quarter, month, week                                                               |
+| Previous and next | The period before and after this one, either side of the current note                                                           |
+| Contained notes   | The shorter periods inside this one — the days of a week, the weeks of a month, the months of a quarter, the quarters of a year |
 
 Notes you have not written yet are shown dimmed. Clicking one creates it, using
 that period's template if you have set one.
@@ -40,22 +40,17 @@ The plugin is not in the community plugin list yet. To install it by hand:
 1. Download `main.js`, `manifest.json` and `styles.css` from a release.
 2. Put them in `<your vault>/.obsidian/plugins/periodic-notes-nav/`.
 3. Reload Obsidian and enable **Periodic Notes Navigator** in
-   *Settings → Community plugins*.
+   _Settings → Community plugins_.
 
-To build from source instead:
-
-```bash
-npm install
-npm run build     # writes main.js next to manifest.json
-npm test          # runs the date, path and rendering tests
-npm run dev       # rebuild on every change
-```
+To build from source instead, see [Development](#development) below: `npm run
+build` writes those same three files to `build/`, ready to be copied into the
+plugin folder.
 
 ## How a note is recognised as periodic
 
 For each period you give the plugin a **folder** and a **file name format**. A
 note counts as, say, a daily note when its file name parses with the daily
-format *and* it sits in the folder those settings would put it in. Nothing else
+format _and_ it sits in the folder those settings would put it in. Nothing else
 in your vault is touched, so a meeting note called `2025-09-26 Standup.md` is
 left alone.
 
@@ -66,13 +61,13 @@ can find is also a note the plugin can link to.
 
 ### Per period
 
-| Setting | What it does |
-| --- | --- |
-| Enable | Whether this period takes part in the bar at all |
-| Folder | Where the notes live. Empty means the vault root. Accepts date placeholders |
-| File name format | The date format of the file name, without `.md` |
-| Label format | The date format used for this note's links in the bar |
-| Template | Optional file used as the body when a missing note is created |
+| Setting          | What it does                                                                |
+| ---------------- | --------------------------------------------------------------------------- |
+| Enable           | Whether this period takes part in the bar at all                            |
+| Folder           | Where the notes live. Empty means the vault root. Accepts date placeholders |
+| File name format | The date format of the file name, without `.md`                             |
+| Label format     | The date format used for this note's links in the bar                       |
+| Template         | Optional file used as the body when a missing note is created               |
 
 Formats use [moment.js tokens](https://momentjs.com/docs/#/displaying/format/),
 the same ones Obsidian's own daily notes use. Wrap plain words in square
@@ -80,13 +75,13 @@ brackets so they are not read as tokens: `[Week] W`, `[Q]Q`.
 
 Sensible starting points:
 
-| Period | File name format | Label format |
-| --- | --- | --- |
-| Daily | `YYYY-MM-DD` | `dddd` |
-| Weekly | `gggg-[W]ww` | `[Week] w` |
-| Monthly | `YYYY-MM` | `MMMM` |
-| Quarterly | `YYYY-[Q]Q` | `[Q]Q` |
-| Yearly | `YYYY` | `YYYY` |
+| Period    | File name format | Label format |
+| --------- | ---------------- | ------------ |
+| Daily     | `YYYY-MM-DD`     | `dddd`       |
+| Weekly    | `gggg-[W]ww`     | `[Week] w`   |
+| Monthly   | `YYYY-MM`        | `MMMM`       |
+| Quarterly | `YYYY-[Q]Q`      | `[Q]Q`       |
+| Yearly    | `YYYY`           | `YYYY`       |
 
 The settings tab shows what today's note would be called with your current
 settings, so you can check a format before committing to it.
@@ -136,7 +131,7 @@ its middle day, which is the same rule ISO uses for week years. That is why week
 
 ## Commands
 
-All of them can be given hotkeys in *Settings → Hotkeys*:
+All of them can be given hotkeys in _Settings → Hotkeys_:
 
 - **Open previous periodic note** and **Open next periodic note** — step one
   period back or forward from the note you are in.
@@ -144,6 +139,51 @@ All of them can be given hotkeys in *Settings → Hotkeys*:
   week.
 - **Open today's daily note**.
 - **Toggle navigation bar**.
+
+## Development
+
+```bash
+npm install
+npm run dev       # rebuild on every change
+npm run build     # typecheck, then write build/ for release
+npm test          # date, path, model and rendering tests
+npm run lint      # eslint
+npm run format    # prettier, in place
+npm run validate  # manifest and version numbers
+```
+
+Everything the build produces goes to `build/`, which git ignores: `main.js`
+alongside copies of `manifest.json` and `styles.css`, so the directory is an
+installable plugin folder on its own, plus the compiled tests under
+`build/test/`.
+
+To work against a real vault, point the build at its plugin folder and let it
+rebuild as you edit:
+
+```bash
+OUTDIR=~/vault/.obsidian/plugins/periodic-notes-nav npm run dev
+```
+
+The source is split so that the parts worth testing hold no Obsidian API:
+`periods.ts` does the date arithmetic, `paths.ts` turns dates into vault paths
+and recognises periodic notes, `model.ts` decides which links a note gets,
+`navbar.ts` renders them, and `main.ts` is the only file that talks to the
+workspace.
+
+### Checks
+
+Pull requests run lint, formatting, typecheck, tests, a production build and
+the metadata validation on Node 22.
+
+### Releasing
+
+1. `npm version <patch|minor|major>` — this bumps `package.json`, then
+   `version-bump.mjs` writes the same version into `manifest.json` and adds it
+   to `versions.json` against the current `minAppVersion`.
+2. Push the commit and its tag. The release workflow checks that the tag and
+   the manifest agree, runs the tests, builds, and opens a **draft** release
+   with `main.js`, `manifest.json` and `styles.css` attached.
+3. Review the generated notes and publish the draft.
 
 ## Licence
 

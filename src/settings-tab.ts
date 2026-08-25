@@ -22,7 +22,10 @@ function formatHint(text: string): DocumentFragment {
 }
 
 export class PeriodicNavSettingTab extends PluginSettingTab {
-	constructor(app: App, private plugin: PeriodicNotesNavPlugin) {
+	constructor(
+		app: App,
+		private plugin: PeriodicNotesNavPlugin
+	) {
 		super(app, plugin);
 	}
 
@@ -127,7 +130,9 @@ export class PeriodicNavSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Parent notes")
-			.setDesc("The breadcrumb row, for example 2025 / Q3 / September / Week 39.")
+			.setDesc(
+				"The breadcrumb row, for example 2025 / Q3 / September / Week 39."
+			)
 			.addToggle((toggle) =>
 				toggle.setValue(settings.showBreadcrumbs).onChange((value) => {
 					settings.showBreadcrumbs = value;
@@ -252,8 +257,7 @@ export class PeriodicNavSettingTab extends PluginSettingTab {
 				) {
 					preview.createDiv({
 						cls: "pnn-settings-preview-line mod-warning",
-						text:
-							"The file name and the label use different week numbering (W and GGGG are ISO, w and gggg follow the locale). They can disagree at the turn of the year.",
+						text: "The file name and the label use different week numbering (W and GGGG are ISO, w and gggg follow the locale). They can disagree at the turn of the year.",
 					});
 				}
 			} catch (error) {

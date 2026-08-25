@@ -32,7 +32,9 @@ export default class PeriodicNotesNavPlugin extends Plugin {
 		await this.loadSettings();
 		this.addSettingTab(new PeriodicNavSettingTab(this.app, this));
 
-		this.registerEvent(this.app.workspace.on("file-open", () => this.refresh()));
+		this.registerEvent(
+			this.app.workspace.on("file-open", () => this.refresh())
+		);
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", () => this.refresh())
 		);
@@ -83,9 +85,8 @@ export default class PeriodicNotesNavPlugin extends Plugin {
 	}
 
 	private renderForView(view: MarkdownView): void {
-		const container = view.containerEl.querySelector<HTMLElement>(
-			".view-content"
-		);
+		const container =
+			view.containerEl.querySelector<HTMLElement>(".view-content");
 		if (!container) return;
 
 		const existing = container.querySelector<HTMLElement>(`.${NAVBAR_CLASS}`);
@@ -118,8 +119,10 @@ export default class PeriodicNotesNavPlugin extends Plugin {
 		// Nothing changed since the last render, so leave the DOM alone.
 		if (existing && existing.dataset.signature === signature) return;
 
-		const navbar = renderNavbar(model, this.settings, (link, evt) =>
-			void this.openLink(link, evt)
+		const navbar = renderNavbar(
+			model,
+			this.settings,
+			(link, evt) => void this.openLink(link, evt)
 		);
 		existing?.detach();
 		if (!navbar) return;

@@ -1,5 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
+import { copyFileSync, mkdirSync, watch } from "fs";
+import path from "path";
 import builtins from "builtin-modules";
 
 const banner = `/*
@@ -9,6 +11,24 @@ if you want to view the source, visit the plugin's github repository
 `;
 
 const prod = process.argv[2] === "production";
+
+// Everything the build produces lands in one directory, which git ignores.
+// Point OUTDIR at a vault's plugin folder to develop against a live vault:
+//   OUTDIR=~/vault/.obsidian/plugins/periodic-notes-nav npm run dev
+const outdir = process.env.OUTDIR ?? "build";
+
+// The files Obsidian loads sit next to main.js, so a copy of them makes the
+// output directory an installable plugin folder on its own.
+const staticFiles = ["manifest.json", "styles.css"];
+
+function copyStaticFiles() {
+	mkdirSync(outdir, { recursive: true });
+	for (const file of staticFiles) {
+		copyFileSync(file, path.join(outdir, file));
+	}
+}
+
+copyStaticFiles();
 
 const context = await esbuild.context({
 	banner: { js: banner },
@@ -35,7 +55,7 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
-	outfile: "main.js",
+	outfile: path.join(outdir, "main.js"),
 	minify: prod,
 });
 
@@ -43,5 +63,10 @@ if (prod) {
 	await context.rebuild();
 	process.exit(0);
 } else {
+	// esbuild only watches what it bundles, so the styles and the manifest are
+	// picked up here instead.
+	for (const file of staticFiles) {
+		watch(file, () => copyStaticFiles());
+	}
 	await context.watch();
 }
