@@ -8,11 +8,28 @@ export type ActivateFn = (
 	evt: MouseEvent | KeyboardEvent
 ) => void;
 
-/** Spoken description of a link, so the label alone does not have to carry it. */
-function describe(link: NavLink, settings: PeriodicNavSettings): string {
+let labelSequence = 0;
+
+/**
+ * Names an element for screen readers. Obsidian renders a hover tooltip for
+ * anything carrying an aria-label, which is noise on a bar whose links are
+ * already labelled, so the name is put in a visually hidden element and
+ * referenced instead.
+ */
+function nameElement(el: HTMLElement, name: string): void {
+	const id = `pnn-label-${++labelSequence}`;
+	el.createSpan({ cls: "pnn-sr-only", text: name, attr: { id } });
+	el.setAttribute("aria-labelledby", id);
+}
+
+/**
+ * What a link's visible label leaves out: which note it leads to, and whether
+ * that note has been written yet. Read out after the label, never shown.
+ */
+function linkDetail(link: NavLink, settings: PeriodicNavSettings): string {
 	const noun = PERIODS[link.key].noun;
 	const name = link.path.slice(link.path.lastIndexOf("/") + 1, -3);
-	const parts = [`${link.label}, ${noun} ${name}`];
+	const parts = [`${noun} ${name}`];
 	if (!link.exists) {
 		parts.push(
 			settings.createMissingNotes
@@ -20,7 +37,7 @@ function describe(link: NavLink, settings: PeriodicNavSettings): string {
 				: "does not exist"
 		);
 	}
-	return parts.join(" — ");
+	return `(${parts.join(", ")})`;
 }
 
 function renderLink(
@@ -31,22 +48,22 @@ function renderLink(
 	options: { arrow?: "before" | "after" } = {}
 ): HTMLElement {
 	const clickable = link.exists || settings.createMissingNotes;
-
-	const description = describe(link, settings);
+	const detail = linkDetail(link, settings);
 
 	if (link.isCurrent) {
-		return parent.createSpan({
+		const current = parent.createSpan({
 			cls: "pnn-item pnn-current",
-			text: link.label,
-			attr: { "aria-current": "page", "aria-label": description },
+			attr: { "aria-current": "page" },
 		});
+		current.createSpan({ cls: "pnn-label", text: link.label });
+		current.createSpan({ cls: "pnn-sr-only", text: detail });
+		return current;
 	}
 
 	const el = parent.createEl("a", {
 		cls: "pnn-item pnn-link",
 		href: "#",
-		title: description,
-		attr: { "data-path": link.path, "aria-label": description },
+		attr: { "data-path": link.path },
 	});
 
 	if (options.arrow === "before") {
@@ -57,6 +74,7 @@ function renderLink(
 		});
 	}
 	el.createSpan({ cls: "pnn-label", text: link.label });
+	el.createSpan({ cls: "pnn-sr-only", text: detail });
 	if (options.arrow === "after") {
 		el.createSpan({
 			cls: "pnn-arrow",
@@ -116,17 +134,16 @@ export function renderNavbar(
 
 	const nav = createEl("nav", {
 		cls: [NAVBAR_CLASS, `pnn-position-${settings.position}`],
-		attr: {
-			"aria-label": "Periodic note navigation",
-			"data-period": model.key,
-		},
+		attr: { "data-period": model.key },
 	});
+	nameElement(nav, "Periodic note navigation");
 
 	if (model.breadcrumbs.length) {
 		const row = nav.createDiv({
 			cls: "pnn-row pnn-breadcrumbs",
-			attr: { "aria-label": "Parent notes" },
+			attr: { role: "group" },
 		});
+		nameElement(row, "Parent notes");
 		model.breadcrumbs.forEach((link, index) => {
 			if (index > 0) separator(row, settings.breadcrumbSeparator);
 			renderLink(row, link, settings, activate);
@@ -136,8 +153,9 @@ export function renderNavbar(
 	if (hasSiblings) {
 		const row = nav.createDiv({
 			cls: "pnn-row pnn-siblings",
-			attr: { "aria-label": `Nearby ${PERIODS[model.key].noun}s` },
+			attr: { role: "group" },
 		});
+		nameElement(row, `Nearby ${PERIODS[model.key].noun}s`);
 		if (model.previous) {
 			renderLink(row, model.previous, settings, activate, {
 				arrow: settings.showArrows ? "before" : undefined,
@@ -156,13 +174,14 @@ export function renderNavbar(
 	if (model.children.length) {
 		const row = nav.createDiv({
 			cls: "pnn-row pnn-children",
-			attr: { "aria-label": `${PERIODS[model.key].noun} contents` },
+			attr: { role: "group" },
 		});
+		nameElement(row, `${PERIODS[model.key].noun} contents`);
 		model.children.forEach((link, index) => {
 			if (index > 0) separator(row, settings.childSeparator);
 			renderLink(row, link, settings, activate);
 		});
 	}
 
-	return nav.hasChildNodes() ? nav : null;
+	return nav;
 }
