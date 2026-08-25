@@ -1,0 +1,160 @@
+/* Periodic Notes Navigator
+ *
+ * Everything here is expressed with Obsidian's own theme variables, so the bar
+ * picks up whatever theme, font size and colour scheme the vault is using.
+ */
+
+.pnn-navbar {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-2, 4px);
+	flex: 0 0 auto;
+	padding: var(--size-4-2, 8px) var(--size-4-4, 16px);
+	font-size: var(--font-ui-small, 13px);
+	line-height: 1.4;
+	color: var(--text-muted);
+	background-color: var(--background-primary);
+}
+
+/* Keep the editor filling whatever height the bar leaves behind, whichever
+ * view mode the note is in. */
+.view-content:has(> .pnn-navbar) {
+	display: flex;
+	flex-direction: column;
+}
+
+.view-content > .pnn-navbar ~ * {
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.pnn-navbar.pnn-position-top {
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.pnn-navbar.pnn-position-bottom {
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.pnn-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2-1, 2px) var(--size-2-2, 4px);
+	min-width: 0;
+}
+
+.pnn-item {
+	padding: 2px 4px;
+	border-radius: var(--radius-s, 4px);
+	white-space: nowrap;
+	text-decoration: none;
+}
+
+.pnn-link {
+	color: var(--link-color, var(--text-accent));
+	cursor: var(--cursor-link, pointer);
+}
+
+.pnn-link:hover,
+.pnn-link:focus-visible {
+	color: var(--link-color-hover, var(--text-accent-hover));
+	text-decoration: var(--link-decoration-hover, underline);
+	background-color: var(--background-modifier-hover);
+}
+
+.pnn-link:focus-visible {
+	outline: 2px solid var(--background-modifier-border-focus, var(--interactive-accent));
+	outline-offset: -2px;
+}
+
+/* Notes that have not been written yet stay readable but clearly secondary. */
+.pnn-missing {
+	color: var(--text-muted);
+	opacity: 0.75;
+}
+
+.pnn-disabled {
+	cursor: default;
+	opacity: 0.5;
+}
+
+.pnn-disabled:hover {
+	background-color: transparent;
+	text-decoration: none;
+}
+
+.pnn-current {
+	color: var(--text-normal);
+	font-weight: var(--font-semibold, 600);
+}
+
+.pnn-separator {
+	color: var(--text-faint);
+	user-select: none;
+}
+
+.pnn-arrow {
+	display: inline-block;
+	padding: 0 0.2em;
+}
+
+/* The breadcrumb row is supporting information, so it stays a touch quieter. */
+.pnn-breadcrumbs {
+	font-size: var(--font-smallest, 0.8em);
+}
+
+.pnn-siblings .pnn-item {
+	font-weight: var(--font-medium, 500);
+}
+
+/* Phones and tablets: larger hit areas and a little more breathing room. */
+.is-mobile .pnn-navbar {
+	gap: var(--size-4-1, 4px);
+	padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
+	font-size: var(--font-ui-smaller, 12px);
+}
+
+.is-mobile .pnn-item {
+	min-height: 30px;
+	display: inline-flex;
+	align-items: center;
+	padding: 4px 6px;
+}
+
+.is-mobile .pnn-row {
+	gap: var(--size-2-2, 4px) var(--size-2-3, 6px);
+}
+
+@media (pointer: coarse) {
+	.pnn-item {
+		min-height: 30px;
+		display: inline-flex;
+		align-items: center;
+	}
+}
+
+@media print {
+	.pnn-navbar {
+		display: none;
+	}
+}
+
+/* Settings tab */
+.pnn-settings-preview {
+	margin: calc(var(--size-4-2, 8px) * -1) 0 var(--size-4-4, 16px);
+	padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
+	border-radius: var(--radius-s, 4px);
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller, 12px);
+}
+
+.pnn-settings-preview-line {
+	font-family: var(--font-monospace);
+	word-break: break-all;
+}
+
+.pnn-settings-preview-line.mod-warning {
+	color: var(--text-error);
+}
