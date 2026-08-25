@@ -33,6 +33,12 @@ that period's template if you have set one.
 - Folder paths, file name formats and link labels are all configurable, with
   date placeholders.
 
+## Privacy
+
+The plugin makes no network requests, bundles no dependencies at runtime, and
+collects nothing. It reads and writes notes in your vault, and its own settings
+file, and nothing else.
+
 ## Installing
 
 The plugin is not in the community plugin list yet. To install it by hand:
@@ -41,6 +47,8 @@ The plugin is not in the community plugin list yet. To install it by hand:
 2. Put them in `<your vault>/.obsidian/plugins/periodic-notes-nav/`.
 3. Reload Obsidian and enable **Periodic Notes Navigator** in
    _Settings → Community plugins_.
+
+Requires Obsidian 1.5.7 or later.
 
 To build from source instead, see [Development](#development) below: `npm run
 build` writes those same three files to `build/`, ready to be copied into the

@@ -119,10 +119,16 @@ function separator(parent: HTMLElement, text: string): void {
 }
 
 /**
- * Builds the navigation bar element. Returns null when there is nothing worth
- * showing, so the note is left untouched instead of gaining an empty bar.
+ * Builds the navigation bar inside the given container and returns it, or
+ * returns null when there is nothing worth showing, leaving the container
+ * untouched instead of giving it an empty bar.
+ *
+ * The element is created through the container so that it belongs to the
+ * container's own document, which is what a note opened in a pop-out window
+ * needs.
  */
 export function renderNavbar(
+	container: HTMLElement,
 	model: NavModel,
 	settings: PeriodicNavSettings,
 	activate: ActivateFn
@@ -132,9 +138,10 @@ export function renderNavbar(
 		return null;
 	}
 
-	const nav = createEl("nav", {
+	const nav = container.createEl("nav", {
 		cls: [NAVBAR_CLASS, `pnn-position-${settings.position}`],
 		attr: { "data-period": model.key },
+		prepend: settings.position === "top",
 	});
 	nameElement(nav, "Periodic note navigation");
 

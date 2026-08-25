@@ -47,8 +47,6 @@ export class PeriodicNavSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		const settings = this.plugin.settings;
 
-		new Setting(containerEl).setName("General").setHeading();
-
 		new Setting(containerEl)
 			.setName("Show navigation bar")
 			.setDesc("Turn the navigation bar on or off in every periodic note.")
