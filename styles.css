@@ -36,6 +36,20 @@
 	border-top: 1px solid var(--background-modifier-border);
 }
 
+/* Names for screen readers. Obsidian shows a tooltip for anything with an
+ * aria-label, so the bar keeps its names out of sight instead. */
+.pnn-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
 .pnn-row {
 	display: flex;
 	flex-wrap: wrap;
@@ -123,7 +137,21 @@
 	padding: 4px 6px;
 }
 
-.is-mobile .pnn-row {
+.is-mobile /* Names for screen readers. Obsidian shows a tooltip for anything with an
+ * aria-label, so the bar keeps its names out of sight instead. */
+.pnn-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+.pnn-row {
 	gap: var(--size-2-2, 4px) var(--size-2-3, 6px);
 }
 
