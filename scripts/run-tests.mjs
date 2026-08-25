@@ -2,7 +2,7 @@ import { rmSync, mkdirSync, readdirSync } from "fs";
 import { spawnSync } from "child_process";
 import esbuild from "esbuild";
 
-const outdir = ".test-build";
+const outdir = "build/test";
 rmSync(outdir, { recursive: true, force: true });
 mkdirSync(outdir, { recursive: true });
 

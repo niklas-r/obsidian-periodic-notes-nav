@@ -64,7 +64,8 @@
 }
 
 .pnn-link:focus-visible {
-	outline: 2px solid var(--background-modifier-border-focus, var(--interactive-accent));
+	outline: 2px solid
+		var(--background-modifier-border-focus, var(--interactive-accent));
 	outline-offset: -2px;
 }
 

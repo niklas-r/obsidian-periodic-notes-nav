@@ -22,13 +22,19 @@ const base = {
 	},
 };
 
-const existing = new Set(["Journal/2025-09-26.md", "Journal/2025-09-25.md", "Journal/2025-09.md"]);
+const existing = new Set([
+	"Journal/2025-09-26.md",
+	"Journal/2025-09-25.md",
+	"Journal/2025-09.md",
+]);
 
 function render(path: string, overrides: Partial<PeriodicNavSettings> = {}) {
 	const settings = mergeSettings({ ...base, ...overrides });
 	const match = matchPeriodicNote(path, settings);
 	assert.ok(match);
-	const model = buildNavModel(match, settings, (candidate) => existing.has(candidate));
+	const model = buildNavModel(match, settings, (candidate) =>
+		existing.has(candidate)
+	);
 	const activated: NavLink[] = [];
 	const nav = renderNavbar(model, settings, (link) => activated.push(link));
 	assert.ok(nav);
@@ -71,9 +77,15 @@ test("links carry a spoken description of where they lead", () => {
 	const { nav } = render("Journal/2025-09-26.md");
 	const previous = nav.querySelector(".pnn-siblings .pnn-link");
 	assert.ok(previous);
-	assert.equal(previous.getAttribute("aria-label"), "Thursday, daily note 2025-09-25");
+	assert.equal(
+		previous.getAttribute("aria-label"),
+		"Thursday, daily note 2025-09-25"
+	);
 	assert.equal(previous.querySelector(".pnn-arrow")?.textContent, "❮");
-	assert.equal(previous.querySelector(".pnn-arrow")?.getAttribute("aria-hidden"), "true");
+	assert.equal(
+		previous.querySelector(".pnn-arrow")?.getAttribute("aria-hidden"),
+		"true"
+	);
 });
 
 test("notes that do not exist are marked and describe what a click will do", () => {
@@ -91,10 +103,14 @@ test("missing notes are inert when they are not allowed to be created", () => {
 	const { nav, activated } = render("Journal/2025-09-26.md", {
 		createMissingNotes: false,
 	});
-	const next = nav.querySelector<HTMLElement>(".pnn-siblings .pnn-link.pnn-missing");
+	const next = nav.querySelector<HTMLElement>(
+		".pnn-siblings .pnn-link.pnn-missing"
+	);
 	assert.ok(next);
 	assert.equal(next.getAttribute("aria-disabled"), "true");
-	next.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+	next.dispatchEvent(
+		new MouseEvent("click", { bubbles: true, cancelable: true })
+	);
 	assert.deepEqual(activated, []);
 });
 
@@ -110,7 +126,11 @@ test("clicking and pressing Enter on a link both open it", () => {
 	assert.equal(activated[0].path, "Journal/2025-09-25.md");
 
 	previous.dispatchEvent(
-		new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })
+		new KeyboardEvent("keydown", {
+			key: "Enter",
+			bubbles: true,
+			cancelable: true,
+		})
 	);
 	assert.equal(activated.length, 2);
 });
@@ -124,16 +144,26 @@ test("a weekly note renders its days in a third row", () => {
 	);
 	assert.deepEqual(
 		[...rows[2].querySelectorAll(".pnn-item")].map((el) => el.textContent),
-		["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+		[
+			"Monday",
+			"Tuesday",
+			"Wednesday",
+			"Thursday",
+			"Friday",
+			"Saturday",
+			"Sunday",
+		]
 	);
 	assert.equal(rows[2].querySelectorAll(".pnn-missing").length, 5);
 });
 
 test("the position setting is reflected in a class on the bar", () => {
-	assert.ok(render("Journal/2025-09-26.md").nav.classList.contains("pnn-position-top"));
 	assert.ok(
-		render("Journal/2025-09-26.md", { position: "bottom" }).nav.classList.contains(
-			"pnn-position-bottom"
-		)
+		render("Journal/2025-09-26.md").nav.classList.contains("pnn-position-top")
+	);
+	assert.ok(
+		render("Journal/2025-09-26.md", {
+			position: "bottom",
+		}).nav.classList.contains("pnn-position-bottom")
 	);
 });

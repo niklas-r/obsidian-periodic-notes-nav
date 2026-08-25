@@ -60,7 +60,9 @@ export function noteLabel(
 	const options = weekOptionsFor(settings);
 	const label = settings.periods[key].label.trim();
 	const start = startOfPeriod(date, key, options);
-	return label ? start.format(label) : start.format(settings.periods[key].format);
+	return label
+		? start.format(label)
+		: start.format(settings.periods[key].format);
 }
 
 export interface PeriodMatch {
