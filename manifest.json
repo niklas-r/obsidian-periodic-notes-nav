@@ -1,7 +1,7 @@
 {
 	"id": "periodic-notes-nav",
 	"name": "Periodic Notes Navigator",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"minAppVersion": "1.5.7",
 	"description": "Adds a navigation bar to daily, weekly, monthly, quarterly and yearly notes so you can move between them without cluttering your note.",
 	"author": "niklas-r",
