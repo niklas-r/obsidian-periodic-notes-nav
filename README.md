@@ -185,13 +185,29 @@ the metadata validation on Node 22.
 
 ### Releasing
 
-1. `npm version <patch|minor|major>` — this bumps `package.json`, then
-   `version-bump.mjs` writes the same version into `manifest.json` and adds it
-   to `versions.json` against the current `minAppVersion`.
-2. Push the commit and its tag. The release workflow checks that the tag and
-   the manifest agree, runs the tests, builds, and opens a **draft** release
-   with `main.js`, `manifest.json` and `styles.css` attached.
-3. Review the generated notes and publish the draft.
+Releases are driven entirely from the Actions tab, so a release, its tag and
+its attached files can never disagree:
+
+1. Run **Prepare release** and choose `patch`, `minor` or `major`. It runs the
+   full check suite, raises the version in `package.json`, `manifest.json` and
+   `versions.json`, and opens a pull request.
+2. Review and merge that pull request.
+3. **Publish release** picks up the merge, tags the commit with the bare
+   version number (no `v` prefix, which is what Obsidian requires), builds, and
+   opens a **draft** release with `main.js`, `manifest.json` and `styles.css`
+   attached.
+4. Read the notes and publish the draft.
+
+Nothing else in the repository creates releases. Creating one by hand, or
+pushing a tag, will not build or attach anything — and the publish workflow
+refuses to run when a release for that version already exists, rather than
+quietly leaving the build on a second, draft release.
+
+The release notes are GitHub's generated pull request list, with a short
+summary written above it by Copilot. That summary needs a `COPILOT_PAT`
+repository secret holding a token from a Copilot-enabled account; without it,
+or if the model call fails, the release still goes out with the generated notes
+alone.
 
 ## Licence
 
