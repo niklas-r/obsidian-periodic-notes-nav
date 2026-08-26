@@ -1,5 +1,6 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import { describe, it } from "mocha";
+import { expect } from "chai";
+import { assertExists } from "./helpers";
 import { mergeSettings } from "../src/settings";
 import { matchPeriodicNote } from "../src/paths";
 import { buildNavModel } from "../src/model";
@@ -28,35 +29,38 @@ const exists = (path: string) => existing.has(path);
 function modelFor(path: string, overrides = {}) {
 	const merged = mergeSettings({ ...settings, ...overrides });
 	const match = matchPeriodicNote(path, merged);
-	assert.ok(match, `${path} should be a periodic note`);
+	assertExists(match, `${path} should be a periodic note`);
 	return buildNavModel(match, merged, exists);
 }
 
-test("a daily note gets breadcrumbs, neighbours and no contents", () => {
-	const model = modelFor("Journal/2025-09-26.md");
+describe("nav model", () => {
+	it("a daily note gets breadcrumbs, neighbours and no contents", () => {
+		const model = modelFor("Journal/2025-09-26.md");
 
-	assert.deepEqual(
-		model.breadcrumbs.map((link) => link.label),
-		["2025", "Q3", "September", "Week 39"]
-	);
-	assert.deepEqual(
-		model.breadcrumbs.map((link) => link.exists),
-		[true, true, true, true]
-	);
-	assert.equal(model.current.label, "Friday");
-	assert.equal(model.current.isCurrent, true);
-	assert.equal(model.previous?.label, "Thursday");
-	assert.equal(model.previous?.exists, true);
-	assert.equal(model.next?.label, "Saturday");
-	assert.equal(model.next?.exists, false);
-	assert.deepEqual(model.children, []);
-});
+		expect(model.breadcrumbs.map((link) => link.label)).to.deep.equal([
+			"2025",
+			"Q3",
+			"September",
+			"Week 39",
+		]);
+		expect(model.breadcrumbs.map((link) => link.exists)).to.deep.equal([
+			true,
+			true,
+			true,
+			true,
+		]);
+		expect(model.current.label).to.equal("Friday");
+		expect(model.current.isCurrent).to.equal(true);
+		expect(model.previous?.label).to.equal("Thursday");
+		expect(model.previous?.exists).to.equal(true);
+		expect(model.next?.label).to.equal("Saturday");
+		expect(model.next?.exists).to.equal(false);
+		expect(model.children).to.deep.equal([]);
+	});
 
-test("a weekly note lists its seven days", () => {
-	const model = modelFor("Journal/2025-W39.md");
-	assert.deepEqual(
-		model.children.map((link) => link.label),
-		[
+	it("a weekly note lists its seven days", () => {
+		const model = modelFor("Journal/2025-W39.md");
+		expect(model.children.map((link) => link.label)).to.deep.equal([
 			"Monday",
 			"Tuesday",
 			"Wednesday",
@@ -64,67 +68,70 @@ test("a weekly note lists its seven days", () => {
 			"Friday",
 			"Saturday",
 			"Sunday",
-		]
-	);
-	assert.deepEqual(
-		model.children.filter((link) => link.exists).map((link) => link.path),
-		["Journal/2025-09-25.md", "Journal/2025-09-26.md"]
-	);
-	assert.deepEqual(
-		model.breadcrumbs.map((link) => link.label),
-		["2025", "Q3", "September"]
-	);
-});
-
-test("a yearly note has no breadcrumbs and lists its quarters", () => {
-	const model = modelFor("Journal/2025.md");
-	assert.deepEqual(model.breadcrumbs, []);
-	assert.deepEqual(
-		model.children.map((link) => link.label),
-		["Q1", "Q2", "Q3", "Q4"]
-	);
-	assert.equal(model.previous?.label, "2024");
-	assert.equal(model.next?.label, "2026");
-});
-
-test("missing notes can be left out entirely", () => {
-	const model = modelFor("Journal/2025-W39.md", { missingNotes: "hidden" });
-	assert.deepEqual(
-		model.children.map((link) => link.label),
-		["Thursday", "Friday"]
-	);
-	assert.equal(model.next, null);
-	assert.equal(model.previous, null);
-});
-
-test("disabled periods drop out of the breadcrumbs and the contents row", () => {
-	const model = modelFor("Journal/2025-09-26.md", {
-		periods: {
-			...settings.periods,
-			weekly: { ...settings.periods.weekly, enabled: false },
-		},
+		]);
+		expect(
+			model.children.filter((link) => link.exists).map((link) => link.path)
+		).to.deep.equal(["Journal/2025-09-25.md", "Journal/2025-09-26.md"]);
+		expect(model.breadcrumbs.map((link) => link.label)).to.deep.equal([
+			"2025",
+			"Q3",
+			"September",
+		]);
 	});
-	assert.deepEqual(
-		model.breadcrumbs.map((link) => link.label),
-		["2025", "Q3", "September"]
-	);
 
-	const monthly = modelFor("Journal/2025-09.md", {
-		periods: {
-			...settings.periods,
-			weekly: { ...settings.periods.weekly, enabled: false },
-		},
+	it("a yearly note has no breadcrumbs and lists its quarters", () => {
+		const model = modelFor("Journal/2025.md");
+		expect(model.breadcrumbs).to.deep.equal([]);
+		expect(model.children.map((link) => link.label)).to.deep.equal([
+			"Q1",
+			"Q2",
+			"Q3",
+			"Q4",
+		]);
+		expect(model.previous?.label).to.equal("2024");
+		expect(model.next?.label).to.equal("2026");
 	});
-	assert.deepEqual(monthly.children, []);
-});
 
-test("rows can be switched off one by one", () => {
-	const model = modelFor("Journal/2025-09-26.md", {
-		showBreadcrumbs: false,
-		showSiblings: false,
+	it("missing notes can be left out entirely", () => {
+		const model = modelFor("Journal/2025-W39.md", { missingNotes: "hidden" });
+		expect(model.children.map((link) => link.label)).to.deep.equal([
+			"Thursday",
+			"Friday",
+		]);
+		expect(model.next).to.equal(null);
+		expect(model.previous).to.equal(null);
 	});
-	assert.deepEqual(model.breadcrumbs, []);
-	assert.equal(model.previous, null);
-	assert.equal(model.next, null);
-	assert.equal(model.current.label, "Friday");
+
+	it("disabled periods drop out of the breadcrumbs and the contents row", () => {
+		const model = modelFor("Journal/2025-09-26.md", {
+			periods: {
+				...settings.periods,
+				weekly: { ...settings.periods.weekly, enabled: false },
+			},
+		});
+		expect(model.breadcrumbs.map((link) => link.label)).to.deep.equal([
+			"2025",
+			"Q3",
+			"September",
+		]);
+
+		const monthly = modelFor("Journal/2025-09.md", {
+			periods: {
+				...settings.periods,
+				weekly: { ...settings.periods.weekly, enabled: false },
+			},
+		});
+		expect(monthly.children).to.deep.equal([]);
+	});
+
+	it("rows can be switched off one by one", () => {
+		const model = modelFor("Journal/2025-09-26.md", {
+			showBreadcrumbs: false,
+			showSiblings: false,
+		});
+		expect(model.breadcrumbs).to.deep.equal([]);
+		expect(model.previous).to.equal(null);
+		expect(model.next).to.equal(null);
+		expect(model.current.label).to.equal("Friday");
+	});
 });

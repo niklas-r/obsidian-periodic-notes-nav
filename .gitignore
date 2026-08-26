@@ -147,3 +147,10 @@ build/
 
 # Plugin settings written by Obsidian while testing in a vault
 data.json
+
+# Obsidian builds downloaded by wdio-obsidian-service for the e2e tests
+.obsidian-cache/
+
+# The e2e vaults ship plugin settings on purpose, so they must survive the
+# blanket data.json rule above.
+!e2e/vaults/*/.obsidian/plugins/*/data.json

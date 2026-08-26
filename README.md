@@ -154,7 +154,8 @@ All of them can be given hotkeys in _Settings → Hotkeys_:
 npm install
 npm run dev       # rebuild on every change
 npm run build     # typecheck, then write build/ for release
-npm test          # date, path, model and rendering tests
+npm test          # unit tests: date, path, model and rendering
+npm run test:e2e  # end-to-end tests in a real Obsidian
 npm run lint      # eslint
 npm run format    # prettier, in place
 npm run validate  # manifest and version numbers
@@ -178,10 +179,47 @@ and recognises periodic notes, `model.ts` decides which links a note gets,
 `navbar.ts` renders them, and `main.ts` is the only file that talks to the
 workspace.
 
+### Tests
+
+Both suites are Mocha. The unit tests use Chai's `expect` and cover everything
+that holds no Obsidian API; they run on every pull request.
+
+The end-to-end tests drive a real Obsidian through
+[wdio-obsidian-service](https://github.com/jesse-r-s-hines/wdio-obsidian-service),
+so they cover `main.ts` — the navigation bar mounting into a note, links and
+commands opening and creating notes. They use `expect` from `@wdio/globals`,
+whose matchers wait for the UI to catch up. There are two vaults under
+`e2e/vaults/`: `periodic/`, which holds periodic notes alongside normal ones,
+and `plain/`, which holds none and proves the bar stays away. Both commit
+plugin settings in `.obsidian/`, so assertions do not depend on the machine's
+locale.
+
+`npm run test:e2e` builds the plugin first, then downloads the Obsidian
+versions it needs into `.obsidian-cache/` (git ignores it). On a headless Linux
+box it needs a display:
+
+```bash
+Xvfb :99 -screen 0 1280x1024x24 &
+DISPLAY=:99 npm run test:e2e
+```
+
+Set `OBSIDIAN_VERSIONS` to test a specific `appVersion/installerVersion` pair,
+for example `OBSIDIAN_VERSIONS="latest/latest"` to skip the older installer.
+Note that this plugin's `minAppVersion`, 1.5.7, is flagged as a beta in
+Obsidian's version registry, so `earliest` needs an Obsidian Insiders account;
+the default matrix pairs the latest app with the oldest installer instead.
+
 ### Checks
 
-Pull requests run lint, formatting, typecheck, tests, a production build and
-the metadata validation on Node 22.
+Pull requests run lint, formatting, typecheck, unit tests, a production build
+and the metadata validation on Node 22.
+
+The end-to-end tests are slower, so they run only on the release pull requests
+opened by **Prepare release** (branches named `release/<version>`), and can be
+started by hand from the Actions tab. Because a pull request opened with the
+default `GITHUB_TOKEN` does not trigger workflow runs, they report on the
+release pull request automatically only when a `RELEASE_PAT` secret is set —
+the same caveat that already applies to the ordinary checks.
 
 ### Releasing
 

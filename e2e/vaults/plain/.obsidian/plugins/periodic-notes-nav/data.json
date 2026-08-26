@@ -1,0 +1,21 @@
+{
+	"enabled": true,
+	"position": "top",
+	"showBreadcrumbs": true,
+	"showSiblings": true,
+	"showChildren": true,
+	"showArrows": true,
+	"missingNotes": "muted",
+	"createMissingNotes": true,
+	"breadcrumbSeparator": "/",
+	"siblingSeparator": "|",
+	"childSeparator": "-",
+	"weekStart": "monday",
+	"periods": {
+		"daily": { "enabled": true, "folder": "Journal", "format": "YYYY-MM-DD", "label": "dddd", "template": "" },
+		"weekly": { "enabled": true, "folder": "Journal", "format": "GGGG-[W]WW", "label": "[Week] W", "template": "" },
+		"monthly": { "enabled": true, "folder": "Journal", "format": "YYYY-MM", "label": "MMMM", "template": "" },
+		"quarterly": { "enabled": true, "folder": "Journal", "format": "YYYY-[Q]Q", "label": "[Q]Q", "template": "" },
+		"yearly": { "enabled": true, "folder": "Journal", "format": "YYYY", "label": "YYYY", "template": "" }
+	}
+}
