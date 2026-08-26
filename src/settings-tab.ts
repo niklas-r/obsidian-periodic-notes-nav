@@ -29,6 +29,13 @@ export class PeriodicNavSettingTab extends PluginSettingTab {
 		super(app, plugin);
 	}
 
+	/**
+	 * Obsidian marks `display()` as deprecated since 1.13.0 in favour of the
+	 * declarative `getSettingDefinitions()`, but that API needs 1.13.0 and this
+	 * plugin supports 1.5.7 upwards. The API documents `display()` as the
+	 * supported fallback for exactly that case, so this is deliberate; revisit
+	 * once requiring 1.13 is reasonable.
+	 */
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
@@ -46,8 +53,6 @@ export class PeriodicNavSettingTab extends PluginSettingTab {
 	private addGeneralSettings(): void {
 		const { containerEl } = this;
 		const settings = this.plugin.settings;
-
-		new Setting(containerEl).setName("General").setHeading();
 
 		new Setting(containerEl)
 			.setName("Show navigation bar")

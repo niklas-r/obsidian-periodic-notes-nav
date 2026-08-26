@@ -53,9 +53,12 @@ function render(path: string, overrides: Partial<PeriodicNavSettings> = {}) {
 		existing.has(candidate)
 	);
 	const activated: NavLink[] = [];
-	const nav = renderNavbar(model, settings, (link) => activated.push(link));
+	const container = document.createElement("div");
+	const nav = renderNavbar(container, model, settings, (link) =>
+		activated.push(link)
+	);
 	assert.ok(nav);
-	return { nav, activated };
+	return { nav, container, activated };
 }
 
 test("the bar renders one row per kind of link", () => {
@@ -178,15 +181,21 @@ test("a weekly note renders its days in a third row", () => {
 	assert.equal(rows[2].querySelectorAll(".pnn-missing").length, 5);
 });
 
-test("the position setting is reflected in a class on the bar", () => {
-	assert.ok(
-		render("Journal/2025-09-26.md").nav.classList.contains("pnn-position-top")
-	);
-	assert.ok(
-		render("Journal/2025-09-26.md", {
-			position: "bottom",
-		}).nav.classList.contains("pnn-position-bottom")
-	);
+test("the position setting decides the class and where the bar is inserted", () => {
+	const top = render("Journal/2025-09-26.md");
+	assert.ok(top.nav.classList.contains("pnn-position-top"));
+	assert.equal(top.container.firstElementChild, top.nav);
+
+	const bottom = render("Journal/2025-09-26.md", { position: "bottom" });
+	assert.ok(bottom.nav.classList.contains("pnn-position-bottom"));
+	assert.equal(bottom.container.lastElementChild, bottom.nav);
+});
+
+test("the bar is created in the document it will live in", () => {
+	// A note in a pop-out window has a document of its own, so the bar must be
+	// built through its container rather than the main window's document.
+	const { nav, container } = render("Journal/2025-09-26.md");
+	assert.equal(nav.ownerDocument, container.ownerDocument);
 });
 
 test("nothing in the bar carries a tooltip", () => {

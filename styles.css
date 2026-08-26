@@ -23,7 +23,8 @@
 	flex-direction: column;
 }
 
-.view-content > .pnn-navbar ~ * {
+.view-content > .pnn-navbar ~ .markdown-source-view,
+.view-content > .pnn-navbar ~ .markdown-reading-view {
 	flex: 1 1 auto;
 	min-height: 0;
 }

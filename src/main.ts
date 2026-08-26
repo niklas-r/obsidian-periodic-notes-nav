@@ -5,7 +5,6 @@ import {
 	Plugin,
 	TAbstractFile,
 	TFile,
-	TFolder,
 	debounce,
 	moment,
 	normalizePath,
@@ -42,16 +41,21 @@ export default class PeriodicNotesNavPlugin extends Plugin {
 			this.app.workspace.on("layout-change", () => this.refresh())
 		);
 
-		// Creating, deleting or moving a note changes which links are missing.
-		const onVaultChange = (file: TAbstractFile) => {
-			if (file.path.endsWith(".md")) this.refreshOnVaultChange();
-		};
-		this.registerEvent(this.app.vault.on("create", onVaultChange));
-		this.registerEvent(this.app.vault.on("delete", onVaultChange));
-		this.registerEvent(this.app.vault.on("rename", onVaultChange));
-
 		this.addCommands();
-		this.app.workspace.onLayoutReady(() => this.refreshAll());
+
+		this.app.workspace.onLayoutReady(() => {
+			// Registered here rather than in onload: Obsidian fires "create" for
+			// every file in the vault while it starts up, and none of those are
+			// worth reacting to.
+			const onVaultChange = (file: TAbstractFile) => {
+				if (file.path.endsWith(".md")) this.refreshOnVaultChange();
+			};
+			this.registerEvent(this.app.vault.on("create", onVaultChange));
+			this.registerEvent(this.app.vault.on("delete", onVaultChange));
+			this.registerEvent(this.app.vault.on("rename", onVaultChange));
+
+			this.refreshAll();
+		});
 	}
 
 	onunload(): void {
@@ -60,6 +64,12 @@ export default class PeriodicNotesNavPlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		this.settings = mergeSettings(await this.loadData());
+	}
+
+	/** Called when data.json changes on disk, for example through Obsidian Sync. */
+	async onExternalSettingsChange(): Promise<void> {
+		await this.loadSettings();
+		this.refreshAll();
 	}
 
 	async saveSettings(): Promise<void> {
@@ -77,11 +87,13 @@ export default class PeriodicNotesNavPlugin extends Plugin {
 	}
 
 	private removeAllNavbars(): void {
-		// Swept from the whole document rather than from the open markdown
-		// leaves, so a bar cannot outlive the view it was rendered into.
-		document.body
-			.querySelectorAll(`.${NAVBAR_CLASS}`)
-			.forEach((el) => el.detach());
+		// Every leaf, not the main document: a note open in a pop-out window
+		// lives in a document of its own.
+		this.app.workspace.iterateAllLeaves((leaf) => {
+			leaf.view.containerEl
+				.querySelectorAll(`.${NAVBAR_CLASS}`)
+				.forEach((el) => el.detach());
+		});
 	}
 
 	private renderForView(view: MarkdownView): void {
@@ -119,21 +131,18 @@ export default class PeriodicNotesNavPlugin extends Plugin {
 		// Nothing changed since the last render, so leave the DOM alone.
 		if (existing && existing.dataset.signature === signature) return;
 
+		existing?.detach();
 		const navbar = renderNavbar(
+			container,
 			model,
 			this.settings,
 			(link, evt) => void this.openLink(link, evt)
 		);
-		existing?.detach();
-		if (!navbar) return;
-
-		navbar.dataset.signature = signature;
-		if (this.settings.position === "bottom") container.appendChild(navbar);
-		else container.prepend(navbar);
+		if (navbar) navbar.dataset.signature = signature;
 	}
 
 	private fileExists(path: string): boolean {
-		return this.app.vault.getAbstractFileByPath(path) instanceof TFile;
+		return this.app.vault.getFileByPath(path) !== null;
 	}
 
 	// --- navigation --------------------------------------------------------
@@ -142,10 +151,10 @@ export default class PeriodicNotesNavPlugin extends Plugin {
 		link: NavLink,
 		evt?: MouseEvent | KeyboardEvent
 	): Promise<void> {
-		const existing = this.app.vault.getAbstractFileByPath(link.path);
+		const existing = this.app.vault.getFileByPath(link.path);
 		let file: TFile;
 
-		if (existing instanceof TFile) {
+		if (existing) {
 			file = existing;
 		} else {
 			if (!this.settings.createMissingNotes) {
@@ -182,8 +191,8 @@ export default class PeriodicNotesNavPlugin extends Plugin {
 			const templatePath = normalizePath(
 				template.endsWith(".md") ? template : `${template}.md`
 			);
-			const templateFile = this.app.vault.getAbstractFileByPath(templatePath);
-			if (templateFile instanceof TFile) {
+			const templateFile = this.app.vault.getFileByPath(templatePath);
+			if (templateFile) {
 				content = applyTemplate(
 					await this.app.vault.cachedRead(templateFile),
 					link.date,
@@ -203,9 +212,10 @@ export default class PeriodicNotesNavPlugin extends Plugin {
 		let path = "";
 		for (const part of parts) {
 			path = path ? `${path}/${part}` : part;
-			const existing = this.app.vault.getAbstractFileByPath(path);
-			if (existing instanceof TFolder) continue;
-			if (existing) throw new Error(`${path} is a file, not a folder`);
+			if (this.app.vault.getFolderByPath(path)) continue;
+			if (this.app.vault.getFileByPath(path)) {
+				throw new Error(`${path} is a file, not a folder`);
+			}
 			await this.app.vault.createFolder(path);
 		}
 	}
