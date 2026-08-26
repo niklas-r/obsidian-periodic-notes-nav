@@ -209,6 +209,19 @@ repository secret holding a token from a Copilot-enabled account; without it,
 or if the model call fails, the release still goes out with the generated notes
 alone.
 
+**Prepare release** needs two things from the repository settings:
+
+- **Settings -> Actions -> General -> Workflow permissions** must allow GitHub
+  Actions to create pull requests. Without it the workflow still pushes the
+  `release/<version>` branch and puts a link to open the pull request in the run
+  summary, but it cannot open it itself.
+- A `RELEASE_PAT` secret is optional but worth setting if `main` requires status
+  checks. Pull requests opened with the default `GITHUB_TOKEN` do not trigger
+  workflow runs, so CI never reports on the release branch and required checks
+  stay pending forever. With the secret, CI runs on the release pull request
+  like any other. Note that **Prepare release** runs the whole check suite
+  itself before writing the release commit either way.
+
 ## Licence
 
 MIT

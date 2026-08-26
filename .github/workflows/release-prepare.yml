@@ -2,8 +2,9 @@
 #
 # Run this from the Actions tab. Merging the pull request it opens triggers
 # release-publish.yml, which tags the merge commit and drafts the release.
-# The bump goes through a pull request because main is protected, and it means
-# CI runs against the release commit before it lands.
+# The bump goes through a pull request because main is protected. Set a
+# RELEASE_PAT secret to have CI run against the release commit before it lands:
+# pull requests opened with the default GITHUB_TOKEN do not trigger workflows.
 name: Prepare release
 
 on:
@@ -80,7 +81,11 @@ jobs:
 
       - name: Open the release pull request
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A pull request opened with GITHUB_TOKEN does not trigger workflow
+          # runs, so CI would never report on the release branch. Use a PAT when
+          # one is configured; fall back to GITHUB_TOKEN, which still opens the
+          # pull request but leaves it without checks.
+          GH_TOKEN: ${{ secrets.RELEASE_PAT || secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           BRANCH="release/$VERSION"
@@ -88,14 +93,47 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           git commit -am "Release $VERSION"
-          git push -u origin "$BRANCH"
+
+          # An earlier run may have pushed this branch and then failed before
+          # opening the pull request. The branch holds nothing but the bump, so
+          # replace it rather than be rejected as non-fast-forward. The lease
+          # is empty when the branch is new, which asserts it does not exist.
+          git fetch origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" 2>/dev/null || true
+          EXPECTED="$(git rev-parse --verify -q "refs/remotes/origin/$BRANCH" || true)"
+          git push --force-with-lease="$BRANCH:$EXPECTED" -u origin "$BRANCH"
+
           cat > pr-body.md <<BODY
           Raises the version to \`$VERSION\` in \`package.json\`, \`manifest.json\` and \`versions.json\`.
 
           Merging this tags the merge commit as \`$VERSION\`, builds the plugin and opens a draft release with \`main.js\`, \`manifest.json\` and \`styles.css\` attached. The draft is yours to review and publish.
           BODY
-          gh pr create \
+
+          EXISTING="$(gh pr list --head "$BRANCH" --state open --json url --jq '.[0].url' || true)"
+          if [ -n "$EXISTING" ]; then
+            echo "Updated the open pull request for $BRANCH: $EXISTING"
+            echo "Release $VERSION is ready in [an existing pull request]($EXISTING)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if gh pr create \
             --base main \
             --head "$BRANCH" \
             --title "Release $VERSION" \
             --body-file pr-body.md
+          then
+            exit 0
+          fi
+
+          # Repositories can forbid Actions from opening pull requests, and that
+          # setting is not visible from inside the run. The bump is pushed and
+          # correct either way, so hand over a link instead of stranding it.
+          COMPARE="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/main...$BRANCH?expand=1"
+          echo "::warning::Could not open the pull request. The branch $BRANCH is pushed; see the run summary to open it by hand."
+          {
+            echo "### Release $VERSION is ready, but the pull request was not opened"
+            echo
+            echo "The version bump is pushed to \`$BRANCH\`. Opening the pull request failed, most likely because"
+            echo "**Settings -> Actions -> General -> Workflow permissions** does not allow GitHub Actions to create pull requests."
+            echo
+            echo "[Open the release pull request]($COMPARE)"
+          } >> "$GITHUB_STEP_SUMMARY"
