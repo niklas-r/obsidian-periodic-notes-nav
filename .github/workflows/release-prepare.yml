@@ -1,0 +1,101 @@
+# Step one of a release: bump the version and open a pull request for it.
+#
+# Run this from the Actions tab. Merging the pull request it opens triggers
+# release-publish.yml, which tags the merge commit and drafts the release.
+# The bump goes through a pull request because main is protected, and it means
+# CI runs against the release commit before it lands.
+name: Prepare release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Which part of the version to raise
+        type: choice
+        required: true
+        default: patch
+        options: [patch, minor, major]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare:
+    name: Bump the version and open a pull request
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Everything CI would check, before a release commit is even written.
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Raise the version
+        id: version
+        run: |
+          npm version "${{ inputs.bump }}" --no-git-tag-version
+          # Also run directly, so manifest.json and versions.json are updated
+          # whether or not npm ran the version lifecycle script.
+          node version-bump.mjs
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Check the version is consistent everywhere
+        run: npm run validate
+
+      - name: Refuse to reuse a version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag $VERSION already exists."
+            exit 1
+          fi
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "::error::A release for $VERSION already exists. Delete it before releasing again."
+            exit 1
+          fi
+
+      - name: Open the release pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          BRANCH="release/$VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git commit -am "Release $VERSION"
+          git push -u origin "$BRANCH"
+          cat > pr-body.md <<BODY
+          Raises the version to \`$VERSION\` in \`package.json\`, \`manifest.json\` and \`versions.json\`.
+
+          Merging this tags the merge commit as \`$VERSION\`, builds the plugin and opens a draft release with \`main.js\`, \`manifest.json\` and \`styles.css\` attached. The draft is yours to review and publish.
+          BODY
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "Release $VERSION" \
+            --body-file pr-body.md

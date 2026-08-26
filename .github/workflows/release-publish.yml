@@ -1,0 +1,175 @@
+# Step two of a release: triggered when a version bump lands on main.
+#
+# Tags the commit, builds the plugin and opens a draft release with the three
+# files Obsidian installs. Nothing else in this repository creates releases, so
+# a release and its tag can never disagree.
+name: Publish release
+
+on:
+  push:
+    branches: [main]
+    paths: ["manifest.json"]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Tag, build and draft the release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history, so the previous tag can be found for the release notes.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Work out what is being released
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./manifest.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          # manifest.json changes for other reasons too, such as raising
+          # minAppVersion. Only an unreleased version is a release.
+          if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
+            echo "$VERSION is already tagged, nothing to release."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "::error::A release for $VERSION already exists. Creating another would leave a stray draft holding the build."
+            exit 1
+          fi
+
+          PREVIOUS=$(git tag --sort=-v:refname | head -n 1)
+          echo "previous=$PREVIOUS" >> "$GITHUB_OUTPUT"
+          echo "release=true" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        if: steps.release.outputs.release == 'true'
+        run: npm ci
+
+      - name: Test
+        if: steps.release.outputs.release == 'true'
+        run: npm test
+
+      - name: Build
+        if: steps.release.outputs.release == 'true'
+        run: npm run build
+
+      - name: Check the version is consistent everywhere
+        if: steps.release.outputs.release == 'true'
+        run: npm run validate -- --tag "${{ steps.release.outputs.version }}"
+
+      - name: Tag the release
+        if: steps.release.outputs.release == 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "$VERSION"
+          git push origin "refs/tags/$VERSION"
+
+      # The generated notes list the pull requests and contributors. They are
+      # the dependable half of the release body: the summary below is written
+      # by a model and may not happen.
+      - name: Collect the changes
+        if: steps.release.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+          PREVIOUS: ${{ steps.release.outputs.previous }}
+        run: |
+          if [ -n "$PREVIOUS" ]; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+              -f tag_name="$VERSION" -f previous_tag_name="$PREVIOUS" --jq .body > generated-notes.md
+            git log --no-merges --pretty=format:'- %s' "$PREVIOUS..HEAD" > changes.txt
+          else
+            gh api --method POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+              -f tag_name="$VERSION" --jq .body > generated-notes.md
+            git log --no-merges --pretty=format:'- %s' > changes.txt
+          fi
+
+          {
+            echo "Write the opening paragraph of the release notes for version $VERSION of"
+            echo "Periodic Notes Navigator, an Obsidian plugin that adds a navigation bar to"
+            echo "periodic notes. Two or three sentences of plain prose, no heading, no bullet"
+            echo "list, no marketing language. Say what changed for someone using the plugin,"
+            echo "and leave out anything that only matters to its developers. These are the"
+            echo "commits since the last release:"
+            echo
+            cat changes.txt
+          } > release-prompt.txt
+
+      # The summary needs a Copilot-enabled token. Without the secret the
+      # release still goes out, with the generated notes alone.
+      - name: Look for a Copilot token
+        id: copilot-token
+        if: steps.release.outputs.release == 'true'
+        env:
+          TOKEN: ${{ secrets.COPILOT_PAT }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "No COPILOT_PAT secret, releasing with generated notes only." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Install the Copilot CLI
+        id: copilot
+        if: steps.copilot-token.outputs.available == 'true'
+        continue-on-error: true
+        run: npm install -g @github/copilot
+
+      - name: Summarise the release
+        id: summary
+        # A summary is a bonus, never a reason to fail a release.
+        continue-on-error: true
+        if: steps.copilot.outcome == 'success'
+        uses: actions/ai-inference@v3
+        with:
+          prompt-file: release-prompt.txt
+          system-prompt: >-
+            You write release notes for an open source Obsidian plugin. You are
+            accurate and plain-spoken, and you never invent changes that are not
+            in the input.
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
+
+      - name: Assemble the release notes
+        if: steps.release.outputs.release == 'true'
+        env:
+          SUMMARY: ${{ steps.summary.outputs.response }}
+        run: |
+          if [ -n "$SUMMARY" ]; then
+            printf '%s\n\n' "$SUMMARY" > notes.md
+          else
+            : > notes.md
+          fi
+          cat generated-notes.md >> notes.md
+
+      # Obsidian installs a plugin from these three files, so they are attached
+      # individually rather than as an archive.
+      - name: Draft the release
+        if: steps.release.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          gh release create "$VERSION" \
+            --draft \
+            --title "$VERSION" \
+            --notes-file notes.md \
+            build/main.js build/manifest.json build/styles.css
+          echo "Draft release $VERSION is ready to review and publish." >> "$GITHUB_STEP_SUMMARY"
