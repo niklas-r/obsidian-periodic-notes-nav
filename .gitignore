@@ -151,6 +151,10 @@ data.json
 # Obsidian builds downloaded by wdio-obsidian-service for the e2e tests
 .obsidian-cache/
 
+# Written by the e2e workflow to key the Obsidian cache, and by anyone
+# reproducing that step locally
+obsidian-versions-lock.txt
+
 # The e2e vaults ship plugin settings on purpose, so they must survive the
 # blanket data.json rule above.
 !e2e/vaults/*/.obsidian/plugins/*/data.json

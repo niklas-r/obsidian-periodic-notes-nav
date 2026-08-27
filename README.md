@@ -48,7 +48,7 @@ The plugin is not in the community plugin list yet. To install it by hand:
 3. Reload Obsidian and enable **Periodic Notes Navigator** in
    _Settings → Community plugins_.
 
-Requires Obsidian 1.5.7 or later.
+Requires Obsidian 1.5.8 or later.
 
 To build from source instead, see [Development](#development) below: `npm run
 build` writes those same three files to `build/`, ready to be copied into the
@@ -203,11 +203,14 @@ Xvfb :99 -screen 0 1280x1024x24 &
 DISPLAY=:99 npm run test:e2e
 ```
 
-Set `OBSIDIAN_VERSIONS` to test a specific `appVersion/installerVersion` pair,
-for example `OBSIDIAN_VERSIONS="latest/latest"` to skip the older installer.
-Note that this plugin's `minAppVersion`, 1.5.7, is flagged as a beta in
-Obsidian's version registry, so `earliest` needs an Obsidian Insiders account;
-the default matrix pairs the latest app with the oldest installer instead.
+By default it tests two pairs: `earliest/earliest`, which resolves to this
+plugin's `minAppVersion`, and `latest/latest`. Set `OBSIDIAN_VERSIONS` to a
+specific `appVersion/installerVersion` pair to narrow that down, for example
+`OBSIDIAN_VERSIONS="latest/latest"` while iterating.
+
+`minAppVersion` is 1.5.8 rather than 1.5.7 because 1.5.7 was an Insiders-only
+beta with no public installer — `earliest` could not be downloaded without an
+Obsidian Insiders account, and no ordinary user was running it.
 
 ### Checks
 

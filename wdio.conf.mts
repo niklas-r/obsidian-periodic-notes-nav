@@ -6,16 +6,12 @@ import { parseObsidianVersions } from "wdio-obsidian-service";
 // restores it from the actions cache; see .github/workflows/e2e.yml.
 const cacheDir = path.resolve(".obsidian-cache");
 
-// "appVersion/installerVersion" pairs.
-//
-// Not "earliest/earliest", which would be the natural choice: "earliest"
-// resolves to this plugin's minAppVersion, and Obsidian 1.5.7 is flagged as a
-// beta in Obsidian's version registry, so downloading it needs an Insiders
-// account. "latest/earliest" pairs the current app with the oldest installer
-// it runs on, which covers old-installer behaviour with no credentials.
-// Override with OBSIDIAN_VERSIONS to test a specific pair.
+// "appVersion/installerVersion" pairs. "earliest" resolves to this plugin's
+// minAppVersion in manifest.json, so the oldest Obsidian we claim to support
+// is tested alongside the newest. Override with OBSIDIAN_VERSIONS to test a
+// specific pair.
 const versions = await parseObsidianVersions(
-	env.OBSIDIAN_VERSIONS ?? "latest/earliest latest/latest",
+	env.OBSIDIAN_VERSIONS ?? "earliest/earliest latest/latest",
 	{ cacheDir }
 );
 
