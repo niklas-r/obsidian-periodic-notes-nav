@@ -24,7 +24,7 @@ export const config: WebdriverIO.Config = {
 	runner: "local",
 	framework: "mocha",
 
-	specs: ["./e2e/specs/**/*.e2e.ts"],
+	specs: ["./tests/e2e/specs/**/*.e2e.ts"],
 
 	maxInstances: Number(env.WDIO_MAX_INSTANCES || 4),
 
@@ -38,7 +38,7 @@ export const config: WebdriverIO.Config = {
 				// `npm run build` has to run before wdio. See the test:e2e script.
 				plugins: ["./build"],
 				// Specs that need the other vault call browser.reloadObsidian().
-				vault: "e2e/vaults/periodic",
+				vault: "tests/e2e/vaults/periodic",
 			},
 		})
 	),

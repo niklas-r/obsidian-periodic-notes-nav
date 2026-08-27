@@ -23,5 +23,5 @@
 			"wdio-obsidian-service"
 		]
 	},
-	"include": ["src/**/*.ts", "test/**/*.ts", "e2e/**/*.ts", "wdio.conf.mts"]
+	"include": ["src/**/*.ts", "tests/**/*.ts", "wdio.conf.mts"]
 }

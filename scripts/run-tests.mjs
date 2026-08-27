@@ -2,17 +2,17 @@ import { rmSync, mkdirSync, readdirSync } from "fs";
 import { spawnSync } from "child_process";
 import esbuild from "esbuild";
 
-const outdir = "build/test";
+const outdir = "build/tests";
 rmSync(outdir, { recursive: true, force: true });
 mkdirSync(outdir, { recursive: true });
 
-const specs = readdirSync("test")
+const specs = readdirSync("tests/unit")
 	.filter((name) => name.endsWith(".test.ts"))
-	.map((name) => `test/${name}`);
+	.map((name) => `tests/unit/${name}`);
 
 await esbuild.build({
 	// setup.ts patches the DOM helpers onto jsdom and is loaded first by Mocha.
-	entryPoints: ["test/setup.ts", ...specs],
+	entryPoints: ["tests/unit/setup.ts", ...specs],
 	outdir,
 	bundle: true,
 	platform: "node",
@@ -24,7 +24,7 @@ await esbuild.build({
 	// esbuild inlines it into an ESM bundle.
 	external: ["jsdom", "mocha", "chai"],
 	// The plugin talks to Obsidian; the tests talk to a stub of it.
-	alias: { obsidian: "./test/stubs/obsidian.ts" },
+	alias: { obsidian: "./tests/unit/stubs/obsidian.ts" },
 });
 
 const bundles = readdirSync(outdir)

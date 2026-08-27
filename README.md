@@ -164,7 +164,7 @@ npm run validate  # manifest and version numbers
 Everything the build produces goes to `build/`, which git ignores: `main.js`
 alongside copies of `manifest.json` and `styles.css`, so the directory is an
 installable plugin folder on its own, plus the compiled tests under
-`build/test/`.
+`build/tests/`.
 
 To work against a real vault, point the build at its plugin folder and let it
 rebuild as you edit:
@@ -181,15 +181,18 @@ workspace.
 
 ### Tests
 
-Both suites are Mocha. The unit tests use Chai's `expect` and cover everything
-that holds no Obsidian API; they run on every pull request.
+Both suites live under `tests/` and both are Mocha: `tests/unit/` and
+`tests/e2e/`.
+
+The unit tests use Chai's `expect` and cover everything that holds no Obsidian
+API; they run on every pull request.
 
 The end-to-end tests drive a real Obsidian through
 [wdio-obsidian-service](https://github.com/jesse-r-s-hines/wdio-obsidian-service),
 so they cover `main.ts` — the navigation bar mounting into a note, links and
 commands opening and creating notes. They use `expect` from `@wdio/globals`,
 whose matchers wait for the UI to catch up. There are two vaults under
-`e2e/vaults/`: `periodic/`, which holds periodic notes alongside normal ones,
+`tests/e2e/vaults/`: `periodic/`, which holds periodic notes alongside normal ones,
 and `plain/`, which holds none and proves the bar stays away. Both commit
 plugin settings in `.obsidian/`, so assertions do not depend on the machine's
 locale.

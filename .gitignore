@@ -157,4 +157,4 @@ obsidian-versions-lock.txt
 
 # The e2e vaults ship plugin settings on purpose, so they must survive the
 # blanket data.json rule above.
-!e2e/vaults/*/.obsidian/plugins/*/data.json
+!tests/e2e/vaults/*/.obsidian/plugins/*/data.json

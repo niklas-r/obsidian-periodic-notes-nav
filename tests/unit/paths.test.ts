@@ -1,14 +1,14 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import moment from "moment";
-import { mergeSettings, type PeriodicNavSettings } from "../src/settings";
+import { mergeSettings, type PeriodicNavSettings } from "../../src/settings";
 import {
 	applyTemplate,
 	matchPeriodicNote,
 	noteLabel,
 	notePath,
 	resolveFolder,
-} from "../src/paths";
+} from "../../src/paths";
 
 function settingsWith(
 	overrides: Partial<PeriodicNavSettings> = {}

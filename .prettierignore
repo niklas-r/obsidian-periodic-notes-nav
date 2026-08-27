@@ -1,5 +1,5 @@
 build/
 node_modules/
 package-lock.json
-e2e/vaults/
+tests/e2e/vaults/
 .obsidian-cache/

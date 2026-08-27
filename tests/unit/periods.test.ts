@@ -8,7 +8,7 @@ import {
 	startOfWeek,
 	usesIsoWeeks,
 	weekOptions,
-} from "../src/periods";
+} from "../../src/periods";
 
 const iso = weekOptions("locale", "GGGG-[W]WW");
 const localeWeeks = weekOptions("locale", "gggg-[W]ww");

@@ -1,10 +1,10 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { assertExists } from "./helpers";
-import { mergeSettings, type PeriodicNavSettings } from "../src/settings";
-import { matchPeriodicNote } from "../src/paths";
-import { buildNavModel, type NavLink } from "../src/model";
-import { renderNavbar } from "../src/navbar";
+import { mergeSettings, type PeriodicNavSettings } from "../../src/settings";
+import { matchPeriodicNote } from "../../src/paths";
+import { buildNavModel, type NavLink } from "../../src/model";
+import { renderNavbar } from "../../src/navbar";
 
 const base = {
 	weekStart: "monday" as const,

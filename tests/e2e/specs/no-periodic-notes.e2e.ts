@@ -7,7 +7,7 @@ describe("a vault with no periodic notes", () => {
 	before(async () => {
 		// A full reboot, because this spec needs a different vault than the one
 		// the other specs run against.
-		await browser.reloadObsidian({ vault: "e2e/vaults/plain" });
+		await browser.reloadObsidian({ vault: "tests/e2e/vaults/plain" });
 	});
 
 	beforeEach(async () => {

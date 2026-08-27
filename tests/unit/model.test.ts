@@ -1,9 +1,9 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
 import { assertExists } from "./helpers";
-import { mergeSettings } from "../src/settings";
-import { matchPeriodicNote } from "../src/paths";
-import { buildNavModel } from "../src/model";
+import { mergeSettings } from "../../src/settings";
+import { matchPeriodicNote } from "../../src/paths";
+import { buildNavModel } from "../../src/model";
 
 const settings = mergeSettings({
 	weekStart: "monday",
