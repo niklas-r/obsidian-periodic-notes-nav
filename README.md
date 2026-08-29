@@ -48,7 +48,7 @@ The plugin is not in the community plugin list yet. To install it by hand:
 3. Reload Obsidian and enable **Periodic Notes Navigator** in
    _Settings → Community plugins_.
 
-Requires Obsidian 1.5.7 or later.
+Requires Obsidian 1.5.8 or later.
 
 To build from source instead, see [Development](#development) below: `npm run
 build` writes those same three files to `build/`, ready to be copied into the
@@ -154,7 +154,8 @@ All of them can be given hotkeys in _Settings → Hotkeys_:
 npm install
 npm run dev       # rebuild on every change
 npm run build     # typecheck, then write build/ for release
-npm test          # date, path, model and rendering tests
+npm test          # unit tests: date, path, model and rendering
+npm run test:e2e  # end-to-end tests in a real Obsidian
 npm run lint      # eslint
 npm run format    # prettier, in place
 npm run validate  # manifest and version numbers
@@ -163,7 +164,7 @@ npm run validate  # manifest and version numbers
 Everything the build produces goes to `build/`, which git ignores: `main.js`
 alongside copies of `manifest.json` and `styles.css`, so the directory is an
 installable plugin folder on its own, plus the compiled tests under
-`build/test/`.
+`build/tests/`.
 
 To work against a real vault, point the build at its plugin folder and let it
 rebuild as you edit:
@@ -178,10 +179,53 @@ and recognises periodic notes, `model.ts` decides which links a note gets,
 `navbar.ts` renders them, and `main.ts` is the only file that talks to the
 workspace.
 
+### Tests
+
+Both suites live under `tests/` and both are Mocha: `tests/unit/` and
+`tests/e2e/`.
+
+The unit tests use Chai's `expect` and cover everything that holds no Obsidian
+API; they run on every pull request.
+
+The end-to-end tests drive a real Obsidian through
+[wdio-obsidian-service](https://github.com/jesse-r-s-hines/wdio-obsidian-service),
+so they cover `main.ts` — the navigation bar mounting into a note, links and
+commands opening and creating notes. They use `expect` from `@wdio/globals`,
+whose matchers wait for the UI to catch up. There are two vaults under
+`tests/e2e/vaults/`: `periodic/`, which holds periodic notes alongside normal ones,
+and `plain/`, which holds none and proves the bar stays away. Both commit
+plugin settings in `.obsidian/`, so assertions do not depend on the machine's
+locale.
+
+`npm run test:e2e` builds the plugin first, then downloads the Obsidian
+versions it needs into `.obsidian-cache/` (git ignores it). On a headless Linux
+box it needs a display:
+
+```bash
+Xvfb :99 -screen 0 1280x1024x24 &
+DISPLAY=:99 npm run test:e2e
+```
+
+By default it tests two pairs: `earliest/earliest`, which resolves to this
+plugin's `minAppVersion`, and `latest/latest`. Set `OBSIDIAN_VERSIONS` to a
+specific `appVersion/installerVersion` pair to narrow that down, for example
+`OBSIDIAN_VERSIONS="latest/latest"` while iterating.
+
+`minAppVersion` is 1.5.8 rather than 1.5.7 because 1.5.7 was an Insiders-only
+beta with no public installer — `earliest` could not be downloaded without an
+Obsidian Insiders account, and no ordinary user was running it.
+
 ### Checks
 
-Pull requests run lint, formatting, typecheck, tests, a production build and
-the metadata validation on Node 22.
+Pull requests run lint, formatting, typecheck, unit tests, a production build
+and the metadata validation on Node 22.
+
+The end-to-end tests are slower, so they run only on the release pull requests
+opened by **Prepare release** (branches named `release/<version>`), and can be
+started by hand from the Actions tab. Because a pull request opened with the
+default `GITHUB_TOKEN` does not trigger workflow runs, they report on the
+release pull request automatically only when a `RELEASE_PAT` secret is set —
+the same caveat that already applies to the ordinary checks.
 
 ### Releasing
 

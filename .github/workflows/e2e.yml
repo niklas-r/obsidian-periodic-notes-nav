@@ -1,0 +1,75 @@
+# End-to-end tests: these boot a real Obsidian, so they are slow and only run
+# where they earn their keep — the release pull requests opened by
+# release-prepare.yml, whose branches are named release/<version>.
+#
+# GitHub cannot filter the pull_request trigger by head branch, so the job
+# itself checks github.head_ref. Note that a pull request opened with the
+# default GITHUB_TOKEN does not trigger workflow runs at all: unless the
+# RELEASE_PAT secret is set, run this workflow by hand from the Actions tab.
+name: E2E
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: End-to-end tests
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'release/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # Run the wdio config on its own so it prints the Obsidian versions it
+      # resolved, and key the cache on those. Then drop the cache directory it
+      # created so the restore below does not conflict with it.
+      - name: Work out the Obsidian cache key
+        run: |
+          npx tsx wdio.conf.mts | grep 'obsidian-cache-key:' > obsidian-versions-lock.txt
+          rm -rf .obsidian-cache
+
+      - name: Cache Obsidian
+        uses: actions/cache@v4
+        with:
+          path: .obsidian-cache
+          key: obsidian-cache-${{ hashFiles('obsidian-versions-lock.txt') }}
+
+      # Obsidian is an Electron app and needs a display. A window manager is
+      # needed too: without one some Obsidian features do not behave.
+      - name: Set up a virtual display
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -q -y herbstluftwm x11-xserver-utils
+
+          export DISPLAY=:99
+          echo "DISPLAY=$DISPLAY" >> "$GITHUB_ENV"
+          Xvfb $DISPLAY -screen 0 1280x1024x24 +extension GLX -noreset &
+          sleep 1
+          herbstluftwm &
+          sleep 1
+
+      - name: End-to-end tests
+        run: npx wdio run ./wdio.conf.mts
+        env:
+          # GitHub's hosted runners have two cores.
+          WDIO_MAX_INSTANCES: 2

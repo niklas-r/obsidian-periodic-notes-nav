@@ -2,16 +2,17 @@ import { rmSync, mkdirSync, readdirSync } from "fs";
 import { spawnSync } from "child_process";
 import esbuild from "esbuild";
 
-const outdir = "build/test";
+const outdir = "build/tests";
 rmSync(outdir, { recursive: true, force: true });
 mkdirSync(outdir, { recursive: true });
 
-const entryPoints = readdirSync("test")
+const specs = readdirSync("tests/unit")
 	.filter((name) => name.endsWith(".test.ts"))
-	.map((name) => `test/${name}`);
+	.map((name) => `tests/unit/${name}`);
 
 await esbuild.build({
-	entryPoints,
+	// setup.ts patches the DOM helpers onto jsdom and is loaded first by Mocha.
+	entryPoints: ["tests/unit/setup.ts", ...specs],
 	outdir,
 	bundle: true,
 	platform: "node",
@@ -19,14 +20,21 @@ await esbuild.build({
 	target: "node18",
 	sourcemap: "inline",
 	// Resolved by node at run time instead of being bundled into the tests.
-	external: ["jsdom"],
+	// Mocha in particular must stay external: it is CommonJS and breaks when
+	// esbuild inlines it into an ESM bundle.
+	external: ["jsdom", "mocha", "chai"],
 	// The plugin talks to Obsidian; the tests talk to a stub of it.
-	alias: { obsidian: "./test/stubs/obsidian.ts" },
+	alias: { obsidian: "./tests/unit/stubs/obsidian.ts" },
 });
 
 const bundles = readdirSync(outdir)
 	.filter((name) => name.endsWith(".test.js"))
 	.map((name) => `${outdir}/${name}`);
 
-const result = spawnSync("node", ["--test", ...bundles], { stdio: "inherit" });
+const mocha = process.platform === "win32" ? "mocha.cmd" : "mocha";
+const result = spawnSync(
+	`node_modules/.bin/${mocha}`,
+	["--file", `${outdir}/setup.js`, ...bundles],
+	{ stdio: "inherit" }
+);
 process.exit(result.status ?? 1);
