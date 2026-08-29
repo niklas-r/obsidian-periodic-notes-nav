@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-periodic-notes-nav",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "A navigation bar for moving between daily, weekly, monthly, quarterly and yearly periodic notes in Obsidian.",
 	"main": "main.js",
 	"type": "module",
